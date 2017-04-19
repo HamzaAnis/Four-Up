@@ -1229,3 +1229,1239 @@ ScorePlayr1 proc
 
 ret
 ScorePlayr1 endp
+
+
+
+;======================================================================================================================
+
+ScorePlayr2 proc
+	;printing player 2 
+	mov ah,02h       ;setting position to show score
+	mov bh,0
+	mov dh,4    ;row
+	mov dl,55   ;col
+	int 10h
+
+	mov ah,09h
+	lea dx,msg3
+	int 21h
+	
+	mov ah,02h
+	mov bh,0
+	mov dh,5
+	mov dl,63
+	int 10h
+	
+	mov ah,02h
+	mov dl,'('
+	int 21h
+	mov ah,02h
+	mov dl,'X'
+	int 21h
+	mov ah,02h
+	mov dl,')'
+	int 21h
+	
+	
+	mov ah,02h
+	mov bh,0
+	mov dh,30
+	mov dl,100
+	int 10h
+	
+	mov ah,02h
+	mov dl,'X'
+	int 21h
+	
+	;it is to diplay the symbol to avoid confusion
+	
+	mov ah,02h
+	mov bh,0      ;setting position to show score
+	mov dh,5   ;row   
+	mov dl,59  ;col
+	int 10h
+	
+	
+	
+	;;;;;;;;;;printing  Base
+	mov ah,02h
+	mov bh,0      ;setting position to show score
+	mov dh,6   ;row   
+	mov dl,59  ;col
+	int 10h
+	
+	mov ah,09h
+	lea dx,msg7
+	int 21h
+	
+	mov ax,totalScore
+	call doubledigit
+	
+	;printing space score
+
+	mov ah,02h
+	mov bh,0      ;setting position to show score
+	mov dh,7  ;row   
+	mov dl,59   ;col
+	int 10h
+	
+	mov ah,09h
+	lea dx,msg8
+	int 21h
+	
+	;displaying score
+	mov ax,player2Score
+	call doubledigit
+
+	
+	cmp turn,2
+	jne skip3                 ;turn is equal to 2 and at his turn check is row is found then add score
+	cmp rowOccured,1
+	jne skip3
+	add player2Score,100
+	mov rowOccured,0      ;making sure that is not added to 2nd player as both calling at the same time
+	
+	skip3:
+		
+		cmp flag,0
+		je skip4
+		
+		mov ax,player1Score  ;criteria is like this subtrct the score earned by the other from total and you have
+		mov bx,totalScore            ;earned that score
+		sub bx,ax
+		mov EarnedScore,bx
+	skip4:
+
+		;printing earned score
+		mov ah,02h
+		mov bh,0      ;setting position to show score
+		mov dh,8  ;row   
+		mov dl,59   ;col
+		int 10h
+		
+		mov ah,09h
+		lea dx,msg9
+		int 21h
+	
+		mov ax,EarnedScore
+		call doubledigit
+
+ret
+ScorePlayr2 endp
+
+;||||||||||||||||||||||||||||||||||||||||END OF Score|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+;||||||||||||||||||||||||||||||||||||||||Start OF Assigning|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+asgn_Coor proc
+;this pro is used to define the coordinates wehre to fill the values
+;start (1,2),(1,6)
+;next  (3,2),(3,6)
+;filling values column wise
+mov cx,7
+mov cor_c,2
+mov si,0
+L3:
+	mov col,0
+	mov cor_r,1
+		L2:
+		
+		
+			mov bp,col
+			mov al,cor_r
+			mov coordinates[si].x_axis[bp],al
+			mov al,cor_c
+			mov coordinates[si].y_axis[bp],al
+											
+			
+			add cor_r,2 ; increasing row value to 2
+			inc col
+			cmp col,6
+			jb L2
+			
+			
+			add cor_c,4   ;setting coordinated col are increasing 4 time
+			
+			add si,type coordinates ;to move to the next srtruct
+			
+			
+		loop L3
+	
+    ret
+asgn_Coor endp
+
+;||||||||||||||||||||||||||||||||||||||||End OF Assigning_|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+
+
+
+
+
+
+;=====================================Check Proc==================================================
+checks proc 
+
+			call Horizontal_check
+			call Vertical_check
+			call Diagonal_Check
+			
+			ret
+checks endp
+
+;=====================================End Check Proc==============================================
+
+
+;||||||||||||||||||||||||||||||||||||||||Horizontal Checks |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+Horizontal_check proc
+	push si
+	
+	mov row,0
+	mov col,0 
+	mov index1,0
+	
+	outer:
+		mov col,0
+		inner:
+		
+			mov ah,0
+			mov al,7
+			
+			mul row
+
+			mov bh,0
+			mov bl,al
+			
+			add bx,col   ;index=7*row+col
+			
+			
+			;taking 4 indexes to compare
+			mov index1,bx
+			
+			inc bx
+			mov index2,bx
+			
+			inc bx
+			mov index3,bx
+			
+			inc bx
+			mov index4,bx
+			
+			
+		
+				call CheckFour
+				
+				cmp rowOccured,1
+				jne HorizontalRowNotFound
+				
+				mov si,index1
+			
+				;if score is not calculated there beore yet then add the score other wise
+				cmp horizontalTrack[si],'0'
+				jne alreadyCalcultedScore
+				
+				call Score
+				mov horizontalTrack[si],1
+				
+				alreadyCalcultedScore:
+				
+				
+				
+				;if not found then it wil miss this calls
+				call HandleWin
+				
+				HorizontalRowNotFound:
+					mov rowOccured,0
+				
+				
+				
+			
+			
+			
+		
+		
+			inc col
+			cmp col,4   ;Column-3
+ 			jb inner
+		
+		inc row
+		cmp row,6
+		jb outer
+	
+	
+	
+	pop si
+	
+	
+	
+ret
+Horizontal_check endp
+
+
+;------------------------------------------------------------------------------------------------------------------------------
+
+Vertical_check proc
+	push si
+	
+	mov row,0
+	mov col,0 
+	mov index1,0
+	mov height,7
+	
+	outer:
+		mov col,0
+		inner:
+		
+			mov ah,0
+			mov al,7
+			
+			mul row
+
+			mov bh,0
+			mov bl,al
+			
+			add bx,col   ;index=7*row+col ;bx has index numbers
+			
+			
+			;taking 4 indexes to compare
+			mov index1,bx
+			mov index2,bx
+			mov index3,bx
+			mov index4,bx
+			
+			mov ah,0
+			mov al,height
+			add index2,ax
+			
+			mov ah,0
+			mov al,height
+			mov multiplicand,2
+			mul multiplicand
+			add index3,ax
+			
+			mov ah,0
+			mov al,height
+			mov multiplicand,3
+			mul multiplicand
+			add index4,ax
+			
+			
+			
+		
+			
+			call CheckFour
+			
+			cmp rowOccured,1
+				jne VerticalRowNotFound
+				
+				mov si,index1
+				;if score is not calculated there beore yet then add the score other wise
+				cmp verticalTrack[si],'0'
+				jne alreadyCalcultedScoreVer
+				
+				call Score
+				mov verticalTrack[si],1
+				
+				alreadyCalcultedScoreVer:
+				
+				;if not found then it wil miss this calls
+				call HandleWin
+				
+				VerticalRowNotFound:
+					mov rowOccured,0
+			
+			
+			
+			
+			
+		
+		
+			inc col
+			cmp col,7  
+ 			jb inner
+		
+		inc row
+		cmp row,3  ;row-3
+		jb outer
+	
+	
+	
+	pop si
+	
+	
+	
+ret
+Vertical_check endp
+
+;------------------------------------------------------------------------------------------------------------------------------
+
+Diagonal_Check proc
+	push si
+	
+ 	mov row,0
+	mov col,0 
+	mov index1,0
+	mov diagonal_left,8
+	mov diagonal_right,6
+	mov count_d,0
+	
+	outer:
+		mov col,0
+		inner:
+		
+			mov ah,0
+			mov al,7
+			
+			mul row
+
+			mov bh,0
+			mov bl,al
+			
+			add bx,col   ;index=7*row+col ;bx has index numbers
+			
+			
+			;;diagonal left check
+			cmp count_d,3
+			jbe D1
+			jmp D2
+			
+			D1:
+				;taking 4 indexes to compare
+				mov index1,bx
+				mov index2,bx
+				mov index3,bx
+				mov index4,bx
+				
+				mov ah,0
+				mov al,diagonal_left
+				add index2,ax
+				
+				mov ah,0
+				mov al,diagonal_left
+				mov multiplicand,2
+				mul multiplicand
+				add index3,ax
+				
+				mov ah,0
+				mov al,diagonal_left
+				mov multiplicand,3
+				mul multiplicand
+				add index4,ax
+				
+				
+				
+						call CheckFour
+					
+						cmp rowOccured,1
+						jne Diagonal1NotFound
+						mov si,index1
+			
+						;if score is not calculated there beore yet then add the score other wise
+						cmp diagonal1Track[si],'0'
+						jne alreadyCalcultedScoreDiag1
+						
+						call Score
+						mov diagonal1Track[si],1
+						
+						alreadyCalcultedScoreDiag1:
+				
+						;if not found then it wil miss this calls
+						call HandleWin
+						
+						Diagonal1NotFound:
+							mov rowOccured,0
+						
+				;*************************************
+					
+				
+			D2:
+			
+				cmp count_d,3
+				jae D3
+				jmp D4
+				
+				D3:
+					;taking 4 indexes to compare
+					mov index1,bx
+					mov index2,bx
+					mov index3,bx
+					mov index4,bx
+					
+					mov ah,0
+					mov al,diagonal_right
+					add index2,ax
+					
+					mov ah,0
+					mov al,diagonal_right
+					mov multiplicand,2
+					mul multiplicand
+					add index3,ax
+					
+					mov ah,0
+					mov al,diagonal_right
+					mov multiplicand,3
+					mul multiplicand
+					add index4,ax
+					
+							
+						call CheckFour
+					
+						cmp rowOccured,1
+						jne Diagonal2NotFound
+						
+							mov si,index1
+			
+							;if score is not calculated there beore yet then add the score other wise
+							cmp diagonal2Track[si],'0'
+							jne alreadyCalcultedScoreDiag2
+							
+							call Score
+							mov diagonal2Track[si],1
+							
+							alreadyCalcultedScoreDiag2:
+							
+						;if not found then it wil miss this calls
+						call HandleWin
+						
+						Diagonal2NotFound:
+							mov rowOccured,0
+					
+				
+				
+				
+			
+			D4:
+				inc count_d
+				inc col
+				cmp col,7  
+				jb inner
+		
+		
+		mov count_d,0
+		inc row
+		cmp row,3  ;row-3
+		jb outer
+
+	
+	pop si
+	
+	
+	
+ret
+Diagonal_Check endp
+
+;------------------------------------------------------------------------------------------------------------------------------
+;============================================================================
+CheckFour proc
+;return 1==2&&2==3&&3==4
+
+	mov bx,offset values
+	
+	mov si,index1
+	mov di,index2
+	
+	mov al,[bx+si]
+	cmp [bx+di],al
+	
+	je Check2
+	
+	jmp NotFound
+	
+	Check2:
+		mov si,index2
+		mov di,index3
+		
+		mov al,[bx+si]
+		cmp [bx+di],al
+		
+		je Check3
+		jmp NotFound
+	
+	Check3:
+		mov si,index3
+		mov di,index4
+		
+		mov al,[bx+si]
+		cmp [bx+di],al
+		je Check4
+		
+		jmp NotFound
+		
+	Check4:
+		mov si,index1
+		mov al,'$'
+		cmp [bx+si],al
+		jne Found
+		
+		jmp NotFound
+		
+		
+	Found:
+		;jmp HandleWin
+		mov rowOccured,1 ; as it is true so making
+	
+	NotFound:
+	
+	
+		
+
+
+ret
+CheckFour endp
+
+
+;-------------------------------------------------------------------------------------
+
+;============================================Check4=================================
+
+;||||||||||||||||||||||||||||||||||||||||computerDecision|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+computerMove proc
+push si
+
+mov tackleFlag,0
+call delay
+call Vertical_checkCmptr
+call Horizontal_checkCmptr
+pop si
+ret
+computerMove endp
+
+
+
+;||||||||||||||||||||||||||||||||||||||||computerDecision|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+;||||||||||||||||||||||||||||||||||||||||Horizontal Checks |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+Horizontal_checkCmptr proc
+	push si
+	
+	mov row,0
+	mov col,0 
+	mov index1,0
+	
+	outer1:
+		mov col,0
+		inner1:
+			mov ah,0
+			mov al,7
+			
+			mul row
+
+			mov bh,0
+			mov bl,al
+			
+			add bx,col   ;index=7*row+col
+			
+			
+			;taking 4 indexes to compare
+			mov index1,bx
+			
+			inc bx
+			mov index2,bx
+			
+			inc bx
+			mov index3,bx
+			
+			inc bx
+			mov index4,bx
+			
+			
+		
+				call decideComputerColumn
+			
+		
+			inc col
+			cmp col,4   ;Column-3
+ 			jb inner1
+		
+		inc row
+		cmp row,6
+		jb outer1
+	
+	
+	
+	pop si
+	
+	
+	
+ret
+Horizontal_checkCmptr endp
+;===============================================================================================================
+
+
+Vertical_checkCmptr proc
+	push si
+	
+	mov row,0
+	mov col,0 
+	mov index1,0
+	mov height,7
+	
+	outer1:
+		mov col,0
+		inner1:
+		
+			mov ah,0
+			mov al,7
+			
+			mul row
+
+			mov bh,0
+			mov bl,al
+			
+			add bx,col   ;index=7*row+col ;bx has index numbers
+			
+			
+			;taking 4 indexes to compare
+			mov index1,bx
+			mov index2,bx
+			mov index3,bx
+			mov index4,bx
+			
+			mov ah,0
+			mov al,height
+			add index2,ax
+			
+			mov ah,0
+			mov al,height
+			mov multiplicand,2
+			mul multiplicand
+			add index3,ax
+			
+			mov ah,0
+			mov al,height
+			mov multiplicand,3
+			mul multiplicand
+			add index4,ax
+			
+			
+			
+		
+			
+			call decideComputerColumn
+			
+			
+			
+		
+		
+			inc col
+			cmp col,7  
+ 			jb inner1
+		
+		inc row
+		cmp row,3  ;row-3
+		jb outer1
+	
+	
+	
+	pop si
+	
+	
+	
+ret
+Vertical_checkCmptr endp
+
+;------------------------------------------------------------------------------------------------------------------------------
+
+decideComputerColumn proc
+	push si
+	
+	cmp tackleFlag,1
+	je skipRandom
+		
+		mov ax,index1
+		mov indext1,ax
+		mov ax,index2
+		mov indext2,ax
+		mov ax,index3
+		mov indext3,ax
+		mov ax,index4
+		mov indext4,ax
+		
+		cmp turn,1
+		jne ValueMoveLabel
+			mov toCompareValue,'0'  ;mov turn 2 symbol as it was changerd before
+		ValueMoveLabel:
+			mov toCompareValue,'X'  ;turn 1 symbol=X to compare with
+		
+
+		
+		mov iterator,0 ;iterator
+		Deciding:
+			cmp iterator,0
+			jne R2
+			mov ax,indext1
+			mov toCompareIndex,ax
+			jmp callingCheck
+			R2:
+				cmp iterator,1
+				jne R3
+				mov ax,indext2
+				mov toCompareIndex,ax
+				jmp callingCheck
+				R3:
+					cmp iterator,2
+					jne R4
+					mov ax,indext3
+					mov toCompareIndex,ax
+					jmp callingCheck
+					R4:
+						mov ax,indext4
+						mov toCompareIndex,ax
+						
+						callingCheck:
+						;	call CheckFourComputerColumn
+						
+		inc iterator
+		cmp iterator,4
+		jb Deciding
+						
+
+	cmp tackleFlag,1
+	je skipRandom
+		
+
+	toBeInrange:		
+			mov ah,2ch
+			int 21h
+			mov ah,0
+			mov al,dl
+			mov bl,7
+			div bl
+			mov col_choice,ah
+			;as the values are in struct . here making sure that computer select that column which is not filled
+			mov ah,0
+			mov al,col_choice
+			mov bl,type coordinates
+			mul bl
+
+			mov si,ax
+
+			
+			mov bx,coordinates[si].filled
+			
+			cmp bx,0
+			jna toBeInrange
+			
+	
+	skipRandom:
+	
+	pop si
+ret
+decideComputerColumn endp
+
+;||||||||||||||||||||||||||||||||||||||||End of Checks|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+CheckFourComputerColumn proc
+push si
+
+cmp tackleFlag,1
+je NotFound_1
+
+	;mov bx,offset values
+	
+	mov si,indext1
+	mov di,indext2
+	
+	cmp si,toCompareIndex
+	jne skipIndex1
+	mov al,toCompareValue
+	jmp Res1
+	
+	
+	skipIndex1:
+		mov al,values[si]
+		Res1:
+			cmp di,toCompareIndex
+			jne skipIndex2
+			
+			cmp toCompareValue,al
+			je Check2_1
+			jmp NotFound_1
+			
+			skipIndex2:
+				cmp values[di],al
+				je Check2_1			
+				jmp NotFound_1
+	
+	Check2_1:
+		mov si,indext2
+		mov di,indext3
+		
+		cmp si,toCompareIndex
+		jne skipIndex3
+		mov al,toCompareValue
+		jmp Res2
+		
+		
+		skipIndex3:
+			mov al,values[si]
+			Res2:
+				cmp di,toCompareIndex
+				jne skipIndex4
+				
+				cmp toCompareValue,al
+				je Check3_1
+				jmp NotFound_1
+				
+				skipIndex4:
+					cmp values[di],al
+					je Check3_1			
+					jmp NotFound_1	
+	Check3_1:
+		mov si,indext3
+		mov di,indext4
+		
+		cmp si,toCompareIndex
+		jne skipIndex5
+		mov al,toCompareValue
+		jmp Res3
+		
+		
+		skipIndex5:
+			mov al,values[si]
+			Res3:
+				cmp di,toCompareIndex
+				jne skipIndex6
+				
+				cmp toCompareValue,al
+				je Check4_1
+				jmp NotFound_1
+				
+				skipIndex6:
+					cmp values[di],al
+					je Check4_1			
+					jmp NotFound_1
+		
+	Check4_1:
+		mov si,toCompareIndex
+		mov al,1
+		cmp placed[si],al
+		jne Found_1
+		
+		jmp NotFound_1
+		
+		
+	Found_1:
+		mov ax,toCompareIndex
+		mov bl,7
+		div bl
+		
+		mov col_choice,ah
+		mov tackleFlag,1 ; as it is true so making
+		
+
+	
+	NotFound_1:
+ 
+
+
+
+
+pop si
+ret
+CheckFourComputerColumn endp
+
+;||||||||||||||||||||||||||||||||||||||||Handles|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+HandleWin proc
+	
+	cmp endGame,41 
+	jne terminate  ;mis them
+	mov flag,1 ; a flag to calculate the final score
+
+		mov ah,02h
+		mov bh,0
+		mov dh,20
+		mov dl,27
+		int 10h
+		
+		cmp turn,1
+		je Player2
+		jmp Player1
+	
+	Player1:
+		mov ah,09h
+		lea dx,winmsg1
+		int 21h
+		
+		call ScorePlayr1  ;from here the score of player 1 which is winner will be calculated
+		
+	jmp terminate
+	
+	Player2:
+		mov ah,09h
+		lea dx,winmsg2
+		int 21h
+	
+		call ScorePlayr2  ;from here the score of player 2 which is winner will be calculated
+
+	terminate:
+		;jmp endprog
+ret
+HandleWin endp
+
+;------------------------------------------------------------------------------------------------------------------------------
+PlayAgain proc
+	mov endGame,0
+	
+	mov ah,02h
+	mov bh,0
+	mov dh,20
+	mov dl,27
+	int 10h
+	
+	mov ah,09h
+	lea dx,drawMsg
+	int 21h
+	
+	mov ah,01h
+	int 21h
+
+	cmp al,'Y'
+	je wantToPlayAgain
+	
+	jmp endprog  ;user don't want toplay again so jump to return control
+	
+	wantToPlayAgain:
+		call main
+	
+	
+ret
+PlayAgain endp
+
+
+;||||||||||||||||||||||||||||||||||||||||Handles(WIn,Draw)|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+;||||||||||||||||||||||||||||||||||||||||Delay|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+delay proc
+
+	mov cx,64000
+	dummyloop:
+		loop dummyloop
+	mov cx,64000
+	dummyloop1:
+		loop dummyloop1
+	mov cx,64000
+	dummyloop3:
+		loop dummyloop3
+	mov cx,64000
+;	dummyloop4:
+;		loop dummyloop4
+;		mov cx,64000
+;;;;;;;;;;;;;
+;	dummyloop5:
+;		loop dummyloop5
+	;	mov cx,64000
+	;dummyloop6:
+	;	loop dummyloop6
+	
+ret
+delay endp
+
+;||||||||||||||||||||||||||||||||||||||||Delay |||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+
+;||||||||||||||||||||||||||||||||||||||||EXTRA|||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+;it display the values assined in they array
+Displayrray proc
+
+   ;clearing the screen
+    mov ah,0h
+	mov al,3h
+    int 10h
+
+	mov ah,02h
+	mov bh,0
+	mov dh,25
+	mov dl,0
+	int 21h
+
+
+	mov row,6
+	mov col,7
+	mov bx,offset placed
+	mov si,0
+	Ae:
+		mov col,7
+				inne:
+					mov ah,02h
+					mov dl,[bx+si]	
+					int 21h
+					
+					inc si
+					
+						mov ah,02h
+						mov dl,' '
+						int 21h
+										mov ah,02h
+						mov dl,' '
+						int 21h
+										mov ah,02h
+						mov dl,' '
+						int 21h
+						
+						dec col
+						cmp col,0
+						
+						ja inne
+						
+						
+						mov ah,09h
+						lea dx, endl
+						int 21h
+						
+						dec row
+						cmp row,0
+
+						ja Ae
+					
+ret
+Displayrray endp
+
+;================================================================
+Display_Asgn_Coor proc
+;this pro is used to define the coordinates wehre to fill the values
+;start (1,2),(1,6)
+;next  (3,2),(3,6)
+;filling values column wise
+mov cx,7
+mov si,0
+	mov col,0
+L3:
+	mov col,0
+		L2:
+								mov bp,col
+					
+								mov ah,02h
+								mov dl,coordinates[si].x_axis[bp]
+								add dl,48
+								INT 21H
+								
+								MOV AH,02H
+								MOV DX,' '
+								INT 21H
+								
+								
+								mov ah,02h
+								mov dl,coordinates[si].y_axis[bp]
+								add dl,48
+								INT 21H
+								
+								MOV AH,02H
+								MOV DX,' '
+						        INT 21H
+								
+								MOV AH,02H
+								MOV DX,' '
+								INT 21H
+								
+			
+			
+			
+			
+			inc col
+			cmp col,6
+			jb L2
+			
+			MOV AH,09H
+			LEA DX,ENDL
+			INT 21H
+			
+			
+			
+				add si,type coordinates ;to move to the next srtruct
+			
+			
+			
+		loop L3
+	
+    ret
+Display_Asgn_Coor endp
+
+
+
+doubledigit proc
+
+
+	  mov cx,0
+
+	  mov dx,0
+
+	  mov bx,10d
+
+		loop1:
+			mov dx,0	;ax: Quotient
+
+			div bx	        
+		
+			push dx		;dx: Remainder
+
+			inc cx
+			cmp ax,0	;if ax!=0 then
+
+			jnz loop1	;Loop will be repeated
+
+		loop2:
+			mov ah,02
+			pop dx
+		
+		
+			add dl,48
+			int 21h
+
+			dec cx
+
+			cmp cx,0	;if cx!=0 then
+			jnz loop2	;Loop will be repeated
+ret 
+doubledigit endp
+
+Sound proc
+
+mov     al, 182         ; Prepare the speaker for the
+        out     43h, al         ;  note.
+        mov     ax, 4560        ; Frequency number (in decimal)
+                                ;  for middle C.
+        out     42h, al         ; Output low byte.
+        mov     al, ah          ; Output high byte.
+        out     42h, al 
+        in      al, 61h         ; Turn on note (get value from
+                                ;  port 61h).
+        or      al, 00000011b   ; Set bits 1 and 0.
+        out     61h, al         ; Send new value.
+        mov     bx, 15          ; Pause for duration of note.
+pause1:
+        mov     cx, 35535
+pause2:
+        dec     cx
+        jne     pause2
+        dec     bx
+        jne     pause1
+        in      al, 61h         ; Turn off note (get value from
+                                ;  port 61h).
+        and     al, 11111100b   ; Reset bits 1 and 0.
+        out     61h, al         ; Send new value.
+
+ret
+Sound endp
+
+
+endprog:
+
+	;Cursor is on grid on terminatio so did this
+	mov ah,02h
+	mov bh,0
+	mov dh,20
+	mov dl,0
+	int 10h
+
+	mov ah,4ch
+	int 21h
+	end 
